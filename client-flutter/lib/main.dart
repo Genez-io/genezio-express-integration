@@ -1,101 +1,134 @@
 import 'package:flutter/material.dart';
-import 'package:genezio_adapter_example_flutter_client/sdk/hello_world_service.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 void main() {
-  runApp(const MyApp());
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      title: 'Book Manager',
+      home: BookManager(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
+class Book {
+  final int? id;
   final String title;
+  final String author;
 
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  Book({this.id, required this.title, required this.author});
+
+  factory Book.fromJson(Map<String, dynamic> json) {
+    return Book(
+      id: json['id'],
+      title: json['title'],
+      author: json['author'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'author': author,
+    };
+  }
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  String _response = '';
+class BookManager extends StatefulWidget {
+  @override
+  _BookManagerState createState() => _BookManagerState();
+}
 
-  void _makeRequest() {
-    HelloWorldService.helloWorld().then((response) {
+class _BookManagerState extends State<BookManager> {
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _authorController = TextEditingController();
+  List<Book> _books = [];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchBooks();
+  }
+
+  Future<void> fetchBooks() async {
+    final response = await http.get(Uri.parse('http://localhost:8881/books'));
+    if (response.statusCode == 200) {
+      List jsonResponse = json.decode(response.body);
       setState(() {
-        _response = response;
+        _books = jsonResponse.map((book) => Book.fromJson(book)).toList();
       });
-    });
+    } else {
+      print('Failed to load books');
+    }
   }
 
-  void _makeRequestWithPersonalDetails() {
-      var person = PersonDetails("Happy", "Capybara", "London");
-
-      HelloWorldService.helloPerson(person).then((response) {
-          setState(() {
-         if (response.success) {
-           _response = response.message; // Set the received message
-         } else {
-           _response = "Failed to fetch message"; // Error handling
-         }
-        });
-      }).catchError((error) {
-          print("Error fetching hello world message: $error");
-          setState(() => _response = "Failed to fetch message"); // Error handling
-      });
+  Future<void> createBook(Book newBook) async {
+    final response = await http.post(
+      Uri.parse('http://localhost:8881/books'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(newBook.toJson()),
+    );
+    if (response.statusCode == 201) {
+      fetchBooks(); // Reload the books after adding a new one
+    } else {
+      print('Failed to add book');
+    }
   }
 
-@override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
+        title: Text('Book Manager'),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'Response from HelloWorldService:',
-            ),
-            Text(
-              _response,
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
+      body: Column(
         children: [
-          FloatingActionButton(
-            onPressed: _makeRequest,
-            tooltip: 'Make Request',
-            child: const Icon(Icons.send),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _titleController,
+              decoration: InputDecoration(
+                labelText: 'Title',
+              ),
+            ),
           ),
-          SizedBox(height: 10), // Add some space between the buttons
-          FloatingActionButton(
-            onPressed: _makeRequestWithPersonalDetails,
-            tooltip: 'Send Request to Personal Details',
-            child: const Icon(Icons.person),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _authorController,
+              decoration: InputDecoration(
+                labelText: 'Author',
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              createBook(Book(title: _titleController.text, author: _authorController.text));
+              _titleController.clear();
+              _authorController.clear();
+            },
+            child: Text('Add Book'),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: _books.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  title: Text(_books[index].title),
+                  subtitle: Text('By ${_books[index].author}'),
+                );
+              },
+            ),
           ),
         ],
       ),
     );
   }
 }
-
