@@ -7,7 +7,7 @@
   "scripts": {
     "build": "babel src --out-dir dist --extensions \".ts\"",
     "start": "node dist/index.js",
-    "dart-sdk": "genezio sdk --source local --output ../client-flutter/sdk --language dart --url http://localhost:8881/genezio",
+    "dart-sdk": "genezio sdk --source local --output ../client-flutter/lib/sdk --language dart --url http://localhost:8881/genezio",
     "ts-sdk": "genezio sdk --tarball --source local --output ../client-ts/sdk --packageName genezio-sdk --language ts --url http://localhost:8881/genezio"
   },
   "author": "",

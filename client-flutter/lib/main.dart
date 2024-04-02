@@ -44,6 +44,25 @@ class _BookManagerState extends State<BookManager> {
   Future<void> createBook(String title, String author ) async {
     BookService.createBook(title, author).then((_) {
       fetchBooks();
+    }).catchError((error) {
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text('An error occurred!'),
+            content: Text(error.toString()),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text('Okay'),
+              ),
+            ],
+          );
+        },
+      );
+      print(error);
     });
   }
 
