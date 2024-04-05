@@ -1,4 +1,4 @@
-# Genezio Integration with Various HTTP Adapters
+# Genezio Integration with Express.JS
 
 ## Overview
 
@@ -39,7 +39,7 @@ For TypeScript: `npm run ts-sdk`
 2. **Install Dependencies and Start**
    ```bash
    npm install
-   npm start
+   npm run dev
    ```
 
 #### Flutter Client (`client-flutter`)
